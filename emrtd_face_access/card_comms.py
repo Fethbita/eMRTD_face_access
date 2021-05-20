@@ -16,6 +16,9 @@ from emrtd_face_access.apdu import APDU
 from emrtd_face_access.secure_messaging import secure_messaging, process_rapdu, ReplyAPDUError
 from emrtd_face_access.secure_messaging_object import SMObject
 from emrtd_face_access.byte_operations import nb
+from emrtd_face_access.print_to_sg import SetInterval
+
+print = SetInterval().print
 
 
 def wait_for_card() -> CardConnectionDecorator:

@@ -16,6 +16,9 @@ from OpenSSL.crypto import (
     X509StoreContextError,
     Error,
 )
+from emrtd_face_access.print_to_sg import SetInterval
+
+print = SetInterval().print
 
 
 def is_self_signed(cert: X509) -> bool:

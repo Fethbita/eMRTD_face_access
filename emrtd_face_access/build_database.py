@@ -22,6 +22,9 @@ from emrtd_face_access.secure_messaging_object import SMObject
 from emrtd_face_access.bac import establish_bac_session_keys, SessionKeyEstablishmentError
 from emrtd_face_access.file_operations import EFReadError, read_data_from_ef, get_dg1_content
 from emrtd_face_access.byte_operations import nb
+from emrtd_face_access.print_to_sg import SetInterval
+
+print = SetInterval().print
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -91,6 +94,8 @@ def main_event_loop(args: argparse.Namespace, window: sg.Window):
                         print("[+] Card is removed from the database")
                 else:
                     print("[-] Card is NOT removed from the database")
+            run = True
+            print("[i] Restarting...")
 
         elif event == "-PROBLEM IN EITHER READ OR DOCUMENT-":
             sg.popup_ok(
@@ -108,6 +113,9 @@ def main_event_loop(args: argparse.Namespace, window: sg.Window):
         elif event == "-RAISED EXCEPTION-":
             print("[!] Problem occured! Restarting...")
             run = True
+
+        elif event == "-PRINT-":
+            window["output_window"].print(values[event])
 
         if run:
             threading.Thread(target=database_builder_loop, args=(window,), daemon=True).start()
@@ -187,11 +195,13 @@ if __name__ == "__main__":
     # fmt: off
     layout = [
         [sg.Image(filename="", key="camera_image")],
-        [sg.Multiline(font="Courier 12", size=(80, 10), reroute_stderr=True, reroute_stdout=True,
-        autoscroll=True, write_only=True, key="output_window", text_color="black", disabled=True, enter_submits=True)],]
+        [sg.Multiline(font="Courier 12", size=(80, 10), key="output_window", autoscroll=True,
+            auto_refresh=True, write_only=True, disabled=True, text_color="black")]]
     # fmt: on
 
     w = sg.Window("Database Builder", layout, location=(800, 400), element_justification="c")
-
+    SetInterval().initialize(w, 0.1)
+    SetInterval().start()
     main_event_loop(a, w)
+    SetInterval().cancel()
     w.close()

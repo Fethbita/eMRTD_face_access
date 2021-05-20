@@ -18,8 +18,6 @@ from OpenSSL.crypto import (
     X509StoreContextError,
 )
 
-from emrtd_face_access.asn1 import dump_asn1, encode_oid_string, get_digestalg_name
-from emrtd_face_access.icao_pkd_load import build_store
 from asn1_tiny_decoder.source.data.asn1tinydecoder import (
     asn1_node_root,
     asn1_get_all,
@@ -28,6 +26,12 @@ from asn1_tiny_decoder.source.data.asn1tinydecoder import (
     asn1_node_next,
     asn1_node_first_child,
 )
+
+from emrtd_face_access.asn1 import dump_asn1, encode_oid_string, get_digestalg_name
+from emrtd_face_access.icao_pkd_load import build_store
+from emrtd_face_access.print_to_sg import SetInterval
+
+print = SetInterval().print
 
 
 class PassiveAuthenticationError(Exception):

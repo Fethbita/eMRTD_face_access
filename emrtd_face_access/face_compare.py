@@ -17,6 +17,10 @@ from PIL import Image
 from cv2 import cv2
 import face_recognition
 
+from emrtd_face_access.print_to_sg import SetInterval
+
+print = SetInterval().print
+
 
 def opencv_dnn_detector() -> cv2.dnn_Net:
     """Create face detection network"""

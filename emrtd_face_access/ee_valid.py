@@ -13,6 +13,10 @@ import subprocess
 
 import PySimpleGUI as sg
 
+from emrtd_face_access.print_to_sg import SetInterval
+
+print = SetInterval().print
+
 
 def check_validity(window: sg.Window, doc_num: str) -> None:
     """

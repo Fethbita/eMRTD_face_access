@@ -20,6 +20,9 @@ from OpenSSL.crypto import (
 
 from emrtd_face_access.certs import is_self_signed, print_valid_time
 from emrtd_face_access.extract_ldif import parse_csca_certs, parse_crls
+from emrtd_face_access.print_to_sg import SetInterval
+
+print = SetInterval().print
 
 
 def build_store(CSCA_certs_dir: Path, crls_dir: Path, ml_dir: Path, dsccrl_dir: Path) -> X509Store:

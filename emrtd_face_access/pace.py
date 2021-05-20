@@ -31,6 +31,9 @@ from emrtd_face_access.asn1 import encode_oid_string, asn1_len
 from emrtd_face_access.secure_messaging import compute_key
 from emrtd_face_access.secure_messaging_object import SMObject
 from emrtd_face_access.extract_ldif import execute
+from emrtd_face_access.print_to_sg import SetInterval
+
+print = SetInterval().print
 
 
 class PACEError(Exception):

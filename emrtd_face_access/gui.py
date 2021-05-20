@@ -92,9 +92,9 @@ def setup_gui(
     ]
 
     if debug_on_gui:
-        layout = layout + [[sg.Multiline(font="Courier 12", size=(100,10), reroute_stderr=True, reroute_stdout=True,
-                    autoscroll=True, write_only=True, key='output_window', text_color="black", disabled=True,
-                    enter_submits=True)]]
+        layout += [[sg.Multiline(font="Courier 12", size=(100, 10), key="output_window", autoscroll=True,
+                    auto_refresh=True, write_only=True, disabled=True, text_color="black")]]
+
     # fmt: on
 
     return layout

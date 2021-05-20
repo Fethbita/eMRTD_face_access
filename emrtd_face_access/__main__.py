@@ -19,6 +19,7 @@ from tinydb import TinyDB
 from emrtd_face_access.main_program_loop import main
 from emrtd_face_access.gui import setup_gui, reset_gui
 from emrtd_face_access.gui import camera_mode, try_again
+from emrtd_face_access.print_to_sg import SetInterval
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -89,10 +90,25 @@ def parse_arguments() -> argparse.Namespace:
     return args
 
 
-def main_event_loop(args: argparse.Namespace, window: sg.Window, db: Optional[TinyDB]):
+def main_event_loop():
     """
     Main GUI event loop
     """
+    args = parse_arguments()
+    layout = setup_gui(debug_on_gui=not args.no_debug)
+    window = sg.Window(
+        "eMRTD Face Access",
+        layout,
+        return_keyboard_events=True,
+        use_default_focus=False,
+        finalize=True,
+    )
+    SetInterval().initialize(window, 0.1)
+    SetInterval().start()
+    db = None
+    if args.db:
+        db = TinyDB(args.db)
+
     first_run = True
     run = True
     everything_ok: bool
@@ -101,9 +117,16 @@ def main_event_loop(args: argparse.Namespace, window: sg.Window, db: Optional[Ti
     lock = threading.Lock()
     lock2 = threading.Lock()
     while True:
-        event, values = window.read(timeout=20)
+        if run:
+            everything_ok = True
+            threading.Thread(
+                target=main, args=(window, args, db, q, q2, lock, lock2, first_run), daemon=True
+            ).start()
+            first_run = False
+            run = False
+        event, values = window.read()
         if event in (sg.WIN_CLOSED, "Exit"):
-            return
+            break
         elif event == "-RUN COMPLETE-":
             if everything_ok:
                 window["result"].update("ACCESS GRANTED", text_color="green")
@@ -111,7 +134,7 @@ def main_event_loop(args: argparse.Namespace, window: sg.Window, db: Optional[Ti
                 window["result"].update("ACCESS DENIED", text_color="red")
             run = True
             try_again(window)
-            reset_gui(window, debug_on_gui=not a.no_debug)
+            reset_gui(window, debug_on_gui=not args.no_debug)
         elif event == "-RAISED EXCEPTION-":
             everything_ok = False
             window["text_instruction"].update(
@@ -119,7 +142,7 @@ def main_event_loop(args: argparse.Namespace, window: sg.Window, db: Optional[Ti
             )
             run = True
             try_again(window)
-            reset_gui(window, debug_on_gui=not a.no_debug)
+            reset_gui(window, debug_on_gui=not args.no_debug)
         elif event == "-SHOW CAMERA-":
             with lock:
                 camera_mode(window, q, q2, lock2, event, values)
@@ -131,6 +154,8 @@ def main_event_loop(args: argparse.Namespace, window: sg.Window, db: Optional[Ti
             window["id_image"].update(data=values[event][0])
         elif event == "-PROGRESS BAR-":
             window["progress"].update_bar(values[event][0], values[event][1])
+        elif (not args.no_debug) and event == "-PRINT-":
+            window["output_window"].print(values[event])
         elif (
             event in values
             and isinstance(values[event], list)
@@ -139,37 +164,10 @@ def main_event_loop(args: argparse.Namespace, window: sg.Window, db: Optional[Ti
             window[values[event][1]].update(values[event][2], text_color=values[event][3])
             if not values[event][0]:
                 everything_ok = False
-        if run:
-            everything_ok = True
-            threading.Thread(
-                target=main,
-                args=(
-                    window,
-                    args,
-                    db,
-                    q,
-                    q2,
-                    lock,
-                    lock2,
-                    first_run,
-                ),
-                daemon=True,
-            ).start()
-            first_run = False
-            run = False
+
+    SetInterval().cancel()
+    window.close()
 
 
 if __name__ == "__main__":
-    a = parse_arguments()
-    layout = setup_gui(debug_on_gui=not a.no_debug)
-    w = sg.Window(
-        "eMRTD Face Access",
-        layout,
-        return_keyboard_events=True,
-        use_default_focus=False,
-    )
-    d = None
-    if a.db:
-        d = TinyDB(a.db)
-    main_event_loop(a, w, d)
-    w.close()
+    main_event_loop()

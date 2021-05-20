@@ -48,6 +48,9 @@ from emrtd_face_access.secure_messaging_object import SMObject
 from emrtd_face_access.log_operations import create_output_folder
 from emrtd_face_access.icao_pkd_load import build_store
 from emrtd_face_access.byte_operations import nb
+from emrtd_face_access.print_to_sg import SetInterval
+
+print = SetInterval().print
 
 # fmt: off
 atr_exceptions = [
@@ -129,7 +132,9 @@ def main(
         )
         mrz, mrz_image = capture_mrz(window, camera_id)
 
-        document_number, birthdate, expiry_date, issuing_country, name, surname = parse_mrz_text(mrz)
+        document_number, birthdate, expiry_date, issuing_country, name, surname = parse_mrz_text(
+            mrz
+        )
         mrz_information = other_mrz(document_number, birthdate, expiry_date)
         window.write_event_value(
             "-WRITE NAME-",
@@ -291,7 +296,7 @@ def main(
         except FileNotFoundError:
             pass
         else:
-            if deviation_docs.find(document_number.encode('utf-8')) != -1:
+            if deviation_docs.find(document_number.encode("utf-8")) != -1:
                 ee_deviant_doc = True
     try:
         passive_auth_return = passive_auth(efsod, ee_deviant_doc=ee_deviant_doc, dump=False)

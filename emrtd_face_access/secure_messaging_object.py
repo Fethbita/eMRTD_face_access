@@ -31,14 +31,12 @@ class SMObject:
         int_val = int.from_bytes(self.ssc, byteorder="big")
         int_val += 1
         self.ssc = int_val.to_bytes(length, byteorder="big")
-        # print(self.ssc)
 
     # def decrement_SSC(self):
     #     length = len(self.ssc)
     #     int_val = int.from_bytes(self.ssc, byteorder="big")
     #     int_val -= 1
     #     self.ssc = int_val.to_bytes(length, byteorder="big")
-    #     #print(self.ssc)
 
     @property
     def enc_alg(self):

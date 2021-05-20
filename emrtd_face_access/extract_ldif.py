@@ -26,6 +26,9 @@ from asn1_tiny_decoder.source.data.asn1tinydecoder import (
     asn1_node_next,
 )
 from emrtd_face_access.certs import is_self_signed, print_valid_time
+from emrtd_face_access.print_to_sg import SetInterval
+
+print = SetInterval().print
 
 
 def execute(cmd: str, data: Union[bytes, None] = None) -> Tuple[bytes, bytes]:

@@ -25,6 +25,9 @@ from emrtd_face_access.apdu import APDU
 from emrtd_face_access.secure_messaging_object import SMObject
 from emrtd_face_access.card_comms import send
 from emrtd_face_access.asn1 import len2int
+from emrtd_face_access.print_to_sg import SetInterval
+
+print = SetInterval().print
 
 
 class EFReadError(Exception):

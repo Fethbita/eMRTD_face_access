@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2021 Burak Can
-# 
+#
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
@@ -18,6 +18,9 @@ from emrtd_face_access.byte_operations import padding_method_2
 from emrtd_face_access.secure_messaging import compute_key, compute_mac
 from emrtd_face_access.secure_messaging_object import SMObject
 from emrtd_face_access.byte_operations import nb
+from emrtd_face_access.print_to_sg import SetInterval
+
+print = SetInterval().print
 
 
 class SessionKeyEstablishmentError(Exception):

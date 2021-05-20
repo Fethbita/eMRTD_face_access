@@ -24,6 +24,9 @@ from emrtd_face_access.file_operations import (
     parse_security_infos,
 )
 from emrtd_face_access.byte_operations import nb
+from emrtd_face_access.print_to_sg import SetInterval
+
+print = SetInterval().print
 
 
 def main():
@@ -32,20 +35,23 @@ def main():
     # fmt: off
     layout = [
         [sg.Image(filename="", key="camera_image", )],
-        [sg.Multiline(font="Courier 12", size=(80, 10), reroute_stderr=True, reroute_stdout=True,
-        autoscroll=True, write_only=True, key="output_window", text_color="black", disabled=True, enter_submits=True)]]
+        [sg.Multiline(font="Courier 12", size=(80, 10), key="output_window", autoscroll=True,
+            auto_refresh=True, write_only=True, disabled=True, text_color="black")]]
     # fmt: on
 
     window = sg.Window(
         "Small demo in playground", layout, location=(800, 400), element_justification="c"
     )
 
+    SetInterval().initialize(window, 0.1)
+    SetInterval().start()
+
     run = True
     # ---===--- Event LOOP Read and display frames, operate the GUI --- #
     while True:
         event, values = window.read(timeout=20)
         if event == sg.WIN_CLOSED:
-            return
+            break
 
         elif event == "-SHOW MRZ-":
             window["camera_image"].update(data=values[event][0])
@@ -61,9 +67,15 @@ def main():
             print("[!] Run completed! Restarting...")
             run = True
 
+        elif event == "-PRINT-":
+            window["output_window"].print(values[event])
+
         if run:
             threading.Thread(target=program_logic, args=(window,), daemon=True).start()
             run = False
+
+    SetInterval().cancel()
+    window.close()
 
 
 def program_logic(window: sg.Window):
