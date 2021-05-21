@@ -613,7 +613,7 @@ def main(
                     [True, "check_database", "Checking database...", "white"],
                 )
                 database_obj = Query()
-                if db.search(database_obj.mrz == "".join(mrz)) == []:
+                if db.search(database_obj.mrz == mrz_read.decode("utf-8")) == []:
                     window.write_event_value(
                         "-CHECK DATABASE-",
                         [False, "check_database_status", "NOT FOUND", "red"],
