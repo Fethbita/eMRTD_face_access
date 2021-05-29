@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2021 Burak Can
-# 
+#
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
@@ -91,17 +91,15 @@ def secure_messaging(sm_object: SMObject, apdu: APDU) -> bytes:
     """
     Sends an APDU using secure messaging.
     """
-    if sm_object.enc_alg is None:
+    if (
+        sm_object.enc_alg is None
+        or sm_object.mac_alg is None
+        or sm_object.pad_len == 0
+        or sm_object.ks_enc is None
+        or sm_object.ks_mac is None
+        or sm_object.ssc is None
+    ):
         return apdu.get_command_header() + (apdu.Lc or b"") + (apdu.cdata or b"") + (apdu.Le or b"")
-        raise ValueError("[-] Encryption algorithm is not set")
-    if sm_object.mac_alg is None:
-        raise ValueError("[-] Mac algorithm is not set")
-    if sm_object.pad_len == 0:
-        raise ValueError("[-] Padding length is 0")
-    if sm_object.ks_enc is None or sm_object.ks_mac is None:
-        raise ValueError("[-] Session keys are not set")
-    if sm_object.ssc is None:
-        raise ValueError("[-] SSC is not set")
 
     apdu.cla = bytes([apdu.cla[0] | 0x0C])
 
@@ -159,17 +157,15 @@ def process_rapdu(sm_object: SMObject, rapdu: bytes) -> bytes:
     rapdu -- Received Reply APDU
     :returns: decrypted_data or None
     """
-    if sm_object.enc_alg is None:
+    if (
+        sm_object.enc_alg is None
+        or sm_object.mac_alg is None
+        or sm_object.pad_len == 0
+        or sm_object.ks_enc is None
+        or sm_object.ks_mac is None
+        or sm_object.ssc is None
+    ):
         return rapdu
-        raise ValueError("[-] Encryption algorithm is not set")
-    if sm_object.mac_alg is None:
-        raise ValueError("[-] Mac algorithm is not set")
-    if sm_object.pad_len == 0:
-        raise ValueError("[-] Padding length is 0")
-    if sm_object.ks_enc is None or sm_object.ks_mac is None:
-        raise ValueError("[-] Session keys are not set")
-    if sm_object.ssc is None:
-        raise ValueError("[-] SSC is not set")
 
     sm_object.increment_ssc()
 

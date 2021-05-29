@@ -19,7 +19,6 @@ from OpenSSL.crypto import (
 )
 
 from emrtd_face_access.certs import is_self_signed, print_valid_time
-from emrtd_face_access.extract_ldif import parse_csca_certs, parse_crls
 from emrtd_face_access.print_to_sg import SetInterval
 
 print = SetInterval().print
@@ -32,7 +31,7 @@ def build_store(CSCA_certs_dir: Path, crls_dir: Path, ml_dir: Path, dsccrl_dir: 
     if "store" in build_store.__dict__:
         return build_store.store
     else:
-        build_store.store = X509Store()
+        store = X509Store()
 
     # Add CA certificates to the store
     # https://www2.politsei.ee/en/nouanded/isikut-toendavad-dokumendid/cert.dot
@@ -51,7 +50,7 @@ def build_store(CSCA_certs_dir: Path, crls_dir: Path, ml_dir: Path, dsccrl_dir: 
                     )
                     continue
                 if is_self_signed(CSCA):
-                    build_store.store.add_cert(CSCA)
+                    store.add_cert(CSCA)
                     print(f"\t[+] Loaded certificate: {CSCA.get_subject().countryName}")
                     print_valid_time("\t\t", CSCA)
                 continue
@@ -67,14 +66,9 @@ def build_store(CSCA_certs_dir: Path, crls_dir: Path, ml_dir: Path, dsccrl_dir: 
                     )
                     continue
                 if is_self_signed(CSCA):
-                    build_store.store.add_cert(CSCA)
+                    store.add_cert(CSCA)
                     print(f"\t[+] Loaded certificate: {CSCA.get_subject().countryName}")
                     print_valid_time("\t\t", CSCA)
-    # Load CSCA certificates from ICAO PKD ML ldif
-    ml_items = os.listdir(ml_dir)
-    latest_ml = max(ml_items)
-    with open(os.path.join(ml_dir, latest_ml), "rb") as infile:
-        parse_csca_certs(infile, build_store.store)
 
     print("[↳] Loading up CRLs")
     # Load individual CRLs
@@ -85,17 +79,13 @@ def build_store(CSCA_certs_dir: Path, crls_dir: Path, ml_dir: Path, dsccrl_dir: 
             except:
                 print(f"\t[-] Error while reading {os.path.join(crls_dir, file)}, skipping...")
                 continue
-            build_store.store.add_crl(CRL)
+            store.add_crl(CRL)
             print(f"\t[+] Loaded CRL: {file}")
-
-    # Load CRLs from ICAO PKD DSC-CRL ldif
-    dsccrl_items = os.listdir(dsccrl_dir)
-    latest_dsccrl = max(dsccrl_items)
-    with open(os.path.join(dsccrl_dir, latest_dsccrl), "rb") as infile:
-        parse_crls(infile, build_store.store)
 
     # store.set_flags(X509StoreFlags.CRL_CHECK | X509StoreFlags.CRL_CHECK_ALL)
     # some countries don't have CRL in ICAO PKD
-    build_store.store.set_flags(X509StoreFlags.CRL_CHECK_ALL)
+    store.set_flags(X509StoreFlags.CRL_CHECK_ALL)
+
+    build_store.store = store
 
     return build_store.store

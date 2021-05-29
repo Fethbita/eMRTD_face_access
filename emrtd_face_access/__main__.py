@@ -11,16 +11,13 @@ import argparse
 from pathlib import Path
 import threading
 from queue import Queue
-from typing import Optional
 
 import PySimpleGUI as sg
-from tinydb import TinyDB
 
 from emrtd_face_access.main_program_loop import main
-from emrtd_face_access.gui import setup_gui, reset_gui
-from emrtd_face_access.gui import camera_mode, try_again
+from emrtd_face_access.gui import setup_gui
 from emrtd_face_access.print_to_sg import SetInterval
-
+from emrtd_face_access.camera import continuous_cap
 
 def parse_arguments() -> argparse.Namespace:
     """parse arguments"""
@@ -29,20 +26,10 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "-no-debug",
-        action="store_true",
-        help="Disable debug panel and print logging information on stdout.",
-    )
-
-    parser.add_argument(
         "-online",
         action="store_true",
         help="Download crl and csca certificates online.",
     )
-
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("-ee", action="store_true", help="Estonian id card/passport")
-    group.add_argument("-mrz", action="store_true", help="MRZ info will be given")
 
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument(
@@ -63,11 +50,6 @@ def parse_arguments() -> argparse.Namespace:
         """https://stackoverflow.com/a/8294654/6077951"""
         raise ex
 
-    parser.add_argument(
-        "--db",
-        type=lambda x: Path(x) if os.path.isfile(x) else raise_(FileNotFoundError(x)),
-        help="Database to be used for controlling",
-    )
     parser.add_argument(
         "--certs",
         type=lambda x: Path(x) if os.path.isdir(x) else raise_(NotADirectoryError(x)),
@@ -95,32 +77,34 @@ def main_event_loop():
     Main GUI event loop
     """
     args = parse_arguments()
-    layout = setup_gui(debug_on_gui=not args.no_debug)
+    w, h = sg.Window.get_screen_size()
+    layout = setup_gui(w, h)
     window = sg.Window(
         "eMRTD Face Access",
         layout,
         return_keyboard_events=True,
         use_default_focus=False,
         finalize=True,
+        #no_titlebar=True,
+        #keep_on_top=True,
+        resizable=False,
+        element_justification="center",
+
     )
+    window.maximize()
     SetInterval().initialize(window, 0.1)
     SetInterval().start()
-    db = None
-    if args.db:
-        db = TinyDB(args.db)
 
     first_run = True
     run = True
-    everything_ok: bool
     q: Queue = Queue()
-    q2: Queue = Queue()
-    lock = threading.Lock()
-    lock2 = threading.Lock()
+    threading.Thread(
+        target=continuous_cap, args=(window, -1, w, h, q), daemon=True
+    ).start()
     while True:
         if run:
-            everything_ok = True
             threading.Thread(
-                target=main, args=(window, args, db, q, q2, lock, lock2, first_run), daemon=True
+                target=main, args=(window, args, q, first_run), daemon=True
             ).start()
             first_run = False
             run = False
@@ -128,42 +112,15 @@ def main_event_loop():
         if event in (sg.WIN_CLOSED, "Exit"):
             break
         elif event == "-RUN COMPLETE-":
-            if everything_ok:
-                window["result"].update("ACCESS GRANTED", text_color="green")
-            else:
-                window["result"].update("ACCESS DENIED", text_color="red")
             run = True
-            try_again(window)
-            reset_gui(window, debug_on_gui=not args.no_debug)
         elif event == "-RAISED EXCEPTION-":
-            everything_ok = False
-            window["text_instruction"].update(
-                "PROBLEM OCCURED (CHECK LOGS)! Press [Enter] to start over!", text_color="red"
-            )
             run = True
-            try_again(window)
-            reset_gui(window, debug_on_gui=not args.no_debug)
         elif event == "-SHOW CAMERA-":
-            with lock:
-                camera_mode(window, q, q2, lock2, event, values)
-        elif event == "-SHOW MRZ-":
-            window["camera_image"].update(data=values[event][0])
-        elif event == "-HIDE MRZ-":
-            window["camera_image"].update(filename="", size=(320, 240))
+            window["camera_image"].update(data=values[event])
         elif event == "-SHOW ID IMAGE-":
             window["id_image"].update(data=values[event][0])
         elif event == "-PROGRESS BAR-":
             window["progress"].update_bar(values[event][0], values[event][1])
-        elif (not args.no_debug) and event == "-PRINT-":
-            window["output_window"].print(values[event])
-        elif (
-            event in values
-            and isinstance(values[event], list)
-            and isinstance(values[event][0], bool)
-        ):
-            window[values[event][1]].update(values[event][2], text_color=values[event][3])
-            if not values[event][0]:
-                everything_ok = False
 
     SetInterval().cancel()
     window.close()

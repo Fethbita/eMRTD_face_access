@@ -74,10 +74,10 @@ def read_data_from_ef(window: sg.Window, sm_object: SMObject, fid: bytes, fname:
             le = bytes([data_len - offset])
         else:
             le = b"\x00"
-        window.write_event_value(
-            "-PROGRESS BAR-",
-            [offset, data_len],
-        )
+        # window.write_event_value(
+        #     "-PROGRESS BAR-",
+        #     [offset, data_len],
+        # )
 
         # exception caught in main program loop
         decrypted_data = send(
@@ -91,17 +91,17 @@ def read_data_from_ef(window: sg.Window, sm_object: SMObject, fid: bytes, fname:
         data += decrypted_data
         offset += len(decrypted_data)
 
-    window.write_event_value(
-        "-PROGRESS BAR-",
-        [offset, data_len],
-    )
+    # window.write_event_value(
+    #     "-PROGRESS BAR-",
+    #     [offset, data_len],
+    # )
 
     if offset != data_len:
         raise EFReadError("[-] Error while processing a file.")
-    window.write_event_value(
-        "-PROGRESS BAR-",
-        [0, 100],
-    )
+    # window.write_event_value(
+    #     "-PROGRESS BAR-",
+    #     [0, 100],
+    # )
 
     return data
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2021 Burak Can
-# 
+#
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
@@ -10,53 +10,34 @@ import os
 from pathlib import Path
 from urllib import request
 import subprocess
-
-import PySimpleGUI as sg
+from queue import Queue
 
 from emrtd_face_access.print_to_sg import SetInterval
 
 print = SetInterval().print
 
 
-def check_validity(window: sg.Window, doc_num: str) -> None:
+def check_validity(q: Queue, doc_num: str) -> None:
     """
     For Estonian documents, check the validity on "https://www2.politsei.ee/qr/?qr=" website
     """
-    window.write_event_value(
-        "-ONLINE CHECK FOR EST-",
-        [True, "text_valid", "Performing online document validity check...", "white"],
-    )
+    q.put([True, "text_valid"])
     page = request.urlopen("https://www2.politsei.ee/qr/?qr=" + doc_num).read().decode("utf8")
     if f"The document {doc_num} is valid." in page:
         print(f"[+] The document {doc_num} is valid.")
-        window.write_event_value(
-            "-ONLINE CHECK FOR EST-",
-            [True, "text_valid_status", "OK", "green"],
-        )
+        q.put([True, "text_valid_status", "OK", "green"])
     elif f"The document {doc_num} is invalid." in page:
         print(f"[-] The document {doc_num} is invalid.")
-        window.write_event_value(
-            "-ONLINE CHECK FOR EST-",
-            [False, "text_valid_status", "INVALID", "red"],
-        )
+        q.put([False, "text_valid_status", "INVALID", "red"])
     elif f"The document {doc_num} has not been issued." in page:
         print(f"[-] The document {doc_num} has not been issued.")
-        window.write_event_value(
-            "-ONLINE CHECK FOR EST-",
-            [False, "text_valid_status", "NOT ISSUED", "red"],
-        )
+        q.put([False, "text_valid_status", "NOT ISSUED", "red"])
     elif f"The document {doc_num} is a specimen." in page:
         print(f"[-] The document {doc_num} is a specimen.")
-        window.write_event_value(
-            "-ONLINE CHECK FOR EST-",
-            [False, "text_valid_status", "SPECIMEN", "red"],
-        )
+        q.put([False, "text_valid_status", "SPECIMEN", "red"])
     else:
         print("[-] politsei.ee can't be reached!")
-        window.write_event_value(
-            "-ONLINE CHECK FOR EST-",
-            [False, "text_valid_status", "ERROR", "red"],
-        )
+        q.put([False, "text_valid_status", "ERROR", "red"])
 
 
 def download_certs(CSCA_certs_dir: Path, crls_dir: Path) -> None:

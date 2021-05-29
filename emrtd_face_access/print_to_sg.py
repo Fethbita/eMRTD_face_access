@@ -9,13 +9,14 @@
 import threading
 import time
 from io import StringIO
+from typing import Dict, Type
 
 import PySimpleGUI as sg
 
 
 # https://stackoverflow.com/a/6798042/6077951
 class _Singleton(type):
-    _instances = {}
+    _instances : Dict[Type['_Singleton'], '_Singleton'] = {}
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:

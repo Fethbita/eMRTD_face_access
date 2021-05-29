@@ -6,8 +6,6 @@
 
 """This module gets the JPEG image from DG2"""
 
-import PySimpleGUI as sg
-
 
 def get_jpeg_im(ef_dg2: bytes) -> bytes:
     """
@@ -21,18 +19,3 @@ def get_jpeg_im(ef_dg2: bytes) -> bytes:
 
     return image
 
-
-def show_result(window: sg.Window, result: bool) -> None:
-    """
-    Show the result as a file.
-    """
-    if result:
-        window.write_event_value(
-            "-COMPARE RESULT-",
-            [True, "text_face_compare_status", "SUCCESS", "green"],
-        )
-    else:
-        window.write_event_value(
-            "-COMPARE RESULT-",
-            [False, "text_face_compare_status", "FAILED", "red"],
-        )

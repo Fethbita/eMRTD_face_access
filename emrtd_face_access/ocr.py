@@ -48,11 +48,7 @@ def capture_mrz(window: sg.Window, camera_id: int) -> Tuple[List[str], Image.Ima
 
         mrz = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         mrz = cv2.adaptiveThreshold(mrz, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 21, 10)
-        # mrz = cv2.adaptiveThreshold(mrz, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,3,2)
-        # mrz = cv2.GaussianBlur(mrz, (5,5), 0)
-        # _, mrz = cv2.threshold(mrz, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-        # mrz = cv2.GaussianBlur(mrz, (5,5), 0)
-        # mrz = cv2.medianBlur(mrz, 3)
+
         frame_shown = copy.deepcopy(mrz)
         width = 320
         height = int(frame_shown.shape[0] * (320 / frame_shown.shape[1]))
@@ -85,20 +81,11 @@ def capture_mrz(window: sg.Window, camera_id: int) -> Tuple[List[str], Image.Ima
             if result is not None:
                 break
 
-            # if result and len(mrz_list) < 3:
-            #     mrz_list.append(result)
-            # elif not result:
-            #     mrz_list = []
-            # else:
-            #     if all(x == mrz_list[0] for x in mrz_list):
-            #         break
-
+    pool.terminate()
     # When everything done, release the capture
     cap.release()
-    # cv2.destroyAllWindows()
     tess_api.End()
 
-    # return mrz_list[0]
     window.write_event_value("-HIDE MRZ-", "")
 
     return (result, checked_frame)

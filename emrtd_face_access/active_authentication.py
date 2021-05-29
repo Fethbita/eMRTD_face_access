@@ -75,7 +75,7 @@ def active_auth(dg15: bytes, sm_object: SMObject, security_infos: List[bytes]):
         try:
             result = ec_pub.verify_dsa_asn1(hashlib.new(hash_type, rnd_ifd).digest(), signature)
         except EC.ECError as ex:
-            print("[-] Error in EC function " + ex)
+            print("[-] Error in EC function " + str(ex))
             raise ActiveAuthenticationError("[-] Error in verify_dsa_asn1 of M2Crypto.EC") from ex
         if result == 1:
             print("[+] Active Authentication (AA) completed successfully!")

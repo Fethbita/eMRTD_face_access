@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2021 Burak Can
-# 
+#
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
@@ -9,7 +9,7 @@
 import argparse
 import os
 from io import BytesIO
-from typing import Union, List, Tuple
+from typing import List, Tuple
 from pathlib import Path
 
 import numpy as np
@@ -73,47 +73,6 @@ def get_bounding_boxes(
     return face_locations
 
 
-def compare_faces(
-    id_image: bytes,
-    cam_image: np.ndarray,
-    face_location: List[Tuple[int, ...]],
-    save_dest: Union[Path, None] = None,
-) -> bool:
-    """
-    Compare two images. First one should be jpeg, the second one should be opencv image (numpy)
-    face_location is the location of the face in the second image
-
-    :returns: True if they are the same person, False otherwise.
-    """
-    im1 = bytes_to_np(id_image)
-    im1 = im1[:, :, ::-1]
-    id_face_loc = get_bounding_boxes(im1)
-    im1 = im1[:, :, ::-1]
-    face_encodings = face_recognition.face_encodings(im1, id_face_loc, 10, "large")[0]
-
-    im2 = cam_image[:, :, ::-1]
-    face_encodings2 = face_recognition.face_encodings(im2, face_location, 10, "large")[0]
-
-    if save_dest:
-        Image.fromarray(im1).save(os.path.join(save_dest, "face_one.jpeg"))
-        Image.fromarray(im2).save(os.path.join(save_dest, "face_two.jpeg"))
-
-    dist = face_recognition.face_distance([face_encodings], face_encodings2)[0]
-    print("[i] Decision threshold is 0.5.")
-    if dist <= 0.5:
-        print(
-            f"[+] Distance between the images is {dist}"
-            "\n[+] These images are of the same people!"
-        )
-        return True
-    else:
-        print(
-            f"[-] Distance between the images is {dist}\n"
-            "[-] These images are of two different people!"
-        )
-        return False
-
-
 def bytes_to_np(img: bytes) -> np.ndarray:
     """
     Converts bytes image (PIL) to numpy image (opencv)
@@ -121,19 +80,6 @@ def bytes_to_np(img: bytes) -> np.ndarray:
     im = Image.open(BytesIO(img))
     im = im.convert("RGB")
     return np.array(im)
-
-
-def jpeg_to_png(img: bytes) -> bytes:
-    """
-    Converts a JPEG to a PNG
-    """
-    im = Image.open(BytesIO(img))
-    width = 240
-    height = int(im.size[1] * (240 / im.size[0]))
-    im = im.convert("RGB").resize((width, height))
-    stream = BytesIO()
-    im.save(stream, format="PNG")
-    return stream.getvalue()
 
 
 def main(im1_filename: Path, im2_filename: Path) -> None:

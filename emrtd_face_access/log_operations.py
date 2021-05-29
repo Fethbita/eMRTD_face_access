@@ -17,13 +17,13 @@ def create_output_folder(output_path: Path, document_number: str) -> Path:
 
     :returns: created folder name
     """
-    folder_name = os.path.join(output_path, document_number)
+    folder_name = Path(os.path.join(output_path, document_number))
     if os.path.isdir(folder_name):
         i = 1
-        folder_name_new = os.path.join(output_path, f"{document_number} ({i})")
+        folder_name_new = Path(os.path.join(output_path, f"{document_number} ({i})"))
         while os.path.isdir(folder_name_new):
             i += 1
-            folder_name_new = os.path.join(output_path, f"{document_number} ({i})")
+            folder_name_new = Path(os.path.join(output_path, f"{document_number} ({i})"))
         folder_name = folder_name_new
     # Create folder if it doesn't exist
     os.makedirs(folder_name, exist_ok=True)
