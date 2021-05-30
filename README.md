@@ -37,12 +37,13 @@ This is a Master Thesis project, this technology will be aimed at automated bord
 First, [enable the universe repository](https://help.ubuntu.com/community/Repositories/Ubuntu).
 Then download the necessary packages:
 ```shell
-sudo apt-get install git wget build-essential cmake python3-dev python3-venv python3-tk swig libpcsclite-dev pcscd libldap2-dev libsasl2-dev libssl-dev tesseract-ocr libtesseract-dev libleptonica-dev pkg-config
+sudo apt-get install git wget build-essential cmake python3-dev python3-venv python3-tk libopenblas-dev liblapack-dev swig pcscd libpcsclite-dev libssl-dev
 ```
 ### On Arch Linux/Manjaro:
 Download the necessary packages and enable the smart card service:
 ```shell
-sudo pacman -S git wget python tk base-devel cmake swig ccid opensc tesseract openblas cblas
+ssudo pacman -S git wget base-devel cmake python tk openblas cblas lapack swig ccid opensc 
+
 sudo systemctl enable --now pcscd.service
 ```
 
@@ -62,10 +63,6 @@ pip3 install -r requirements.txt
 # Download text detection and face detection assets
 ./download_assets.sh
 ```
-Download each file from https://download.pkd.icao.int/ and put them in their respective folder.\
-`icaopkd-001-dsccrl-xxxxxx.ldif` goes into `certs/icao_pkd_dsccrl`,\
-`icaopkd-002-ml-xxxxxx.ldif` goes into `certs/icao_pkd_ml`,\
-`icaopkd-003-nc-xxxxxx.ldif` goes into `certs/icao_pkd_nc`.
 
 ## Running
 
@@ -75,50 +72,25 @@ source .venv/bin/activate
 ```
 You can run the main program by running the module (See Usage for program arguments or run `python3 -m emrtd_face_access -h`)
 ```shell
-python3 -m emrtd_face_access -mrz
-```
-You can run individual modules, for example `face_compare.py` with
-```shell
-python3 -m emrtd_face_access.face_compare path_to_image_one path_to_image_two
-```
-`build_database.py` with
-```shell
-python3 -m emrtd_face_access.build_database [-h] [-add | -delete]
-```
-`small_demo.py` with
-```shell
-python3 -m emrtd_face_access.small_demo
+python3 -m emrtd_face_access
 ```
 
 ## Usage
 ```
-usage: __main__.py [-h] [-no-debug] [-online] (-ee | -mrz) [-bio | -no-bio] [--db DB] [--certs CERTS] [--crls CRLS] [--output OUTPUT]
+usage: __main__.py [-h] [-online] [--certs CERTS] [--crls CRLS] [--output OUTPUT] [--camera CAMERA] [--resolution RESOLUTION RESOLUTION] [--rotate ROTATE]
 
 Biometric (Facial) Access Control System Using ID Card
 
 optional arguments:
   -h, --help            show this help message and exit
-  -no-debug             Disable debug panel and print logging information on stdout.
   -online               Download crl and csca certificates online.
-  -ee                   Estonian id card/passport
-  -mrz                  MRZ info will be given
-  -bio                  (default) Use biometric control (facial recognition)
-  -no-bio               Do not use biometric control (facial recognition)
-  --db DB               Database to be used for controlling
   --certs CERTS         Directory to CSCA certificates
   --crls CRLS           Directory to certificate revocation lists
   --output OUTPUT, --o OUTPUT
                         Directory to save read card files
-```
-
-## Database Builder Usage
-```
-usage: build_database.py [-h] [-add | -delete]
-
-Build an allowed document database for emrtd_face_access
-
-optional arguments:
-  -h, --help  show this help message and exit
-  -add        (default) Add a card to the database
-  -delete     Remove a card from the database
+  --camera CAMERA, --c CAMERA
+                        Device id of the camera to be used
+  --resolution RESOLUTION RESOLUTION, --r RESOLUTION RESOLUTION
+                        Resolution to be run at, if not given the screen resolution is used (width height)
+  --rotate ROTATE       Degrees to rotate clockwise (90, 180, 270)
 ```
