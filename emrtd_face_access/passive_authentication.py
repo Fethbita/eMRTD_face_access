@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2021 Burak Can
-# 
+#
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
@@ -29,9 +29,6 @@ from asn1_tiny_decoder.source.data.asn1tinydecoder import (
 
 from emrtd_face_access.asn1 import dump_asn1, encode_oid_string, get_digestalg_name
 from emrtd_face_access.icao_pkd_load import build_store
-from emrtd_face_access.print_to_sg import SetInterval
-
-print = SetInterval().print
 
 
 class PassiveAuthenticationError(Exception):

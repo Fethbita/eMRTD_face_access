@@ -20,15 +20,27 @@ import face_recognition
 
 
 def continuous_cap(
-    window: sg.Window, camera_id: int, screen_width: int, screen_height: int, q: Queue
+    window: sg.Window,
+    camera_id: int,
+    screen_width: int,
+    screen_height: int,
+    rotate: int,
+    q: Queue,
 ) -> None:
     """
     Continuously capture
     """
     cap = cv2.VideoCapture(camera_id)
+    cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)
     font = cv2.FONT_HERSHEY_SIMPLEX
     line_type = 2
     _, frame = cap.read()
+    if rotate == 90:
+        frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+    elif rotate == 180:
+        frame = cv2.rotate(frame, cv2.ROTATE_180)
+    elif rotate == 270:
+        frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
     text_alpha = 0.4
     ratio = min(screen_width / frame.shape[1], screen_height / frame.shape[0])
     width = int(frame.shape[1] * ratio)
@@ -65,6 +77,12 @@ def continuous_cap(
 
     while True:
         _, frame = cap.read()
+        if rotate == 90:
+            frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+        elif rotate == 180:
+            frame = cv2.rotate(frame, cv2.ROTATE_180)
+        elif rotate == 270:
+            frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
         frame_shown = copy.deepcopy(frame)
         frame_shown = cv2.resize(frame_shown, (width, height))
 
@@ -87,17 +105,31 @@ def continuous_cap(
 
             elif isinstance(queue_element, list) and queue_element[0] == "Unknown card":
                 error_text = f"Unrecognized card inserted."
-                error_text_width, error_text_height = cv2.getTextSize(error_text, font, 1, line_type)[0]
+                error_text_width, error_text_height = cv2.getTextSize(
+                    error_text, font, 1, line_type
+                )[0]
                 error_text_font_scale = int(width * 0.9) / error_text_width
-                error_text_width, error_text_height = cv2.getTextSize(error_text, font, error_text_font_scale, line_type)[0]
-                error_text_coords = (width - error_text_width) // 2, (height + error_text_height) // 2
+                error_text_width, error_text_height = cv2.getTextSize(
+                    error_text, font, error_text_font_scale, line_type
+                )[0]
+                error_text_coords = (width - error_text_width) // 2, (
+                    height + error_text_height
+                ) // 2
 
             elif isinstance(queue_element, list) and queue_element[0] == "Known card":
-                error_text = f"Your {queue_element[1]} is issued on {queue_element[2]} and is not supported."
-                error_text_width, error_text_height = cv2.getTextSize(error_text, font, 1, line_type)[0]
+                error_text = (
+                    f"Your {queue_element[1]} is issued on {queue_element[2]} and is not supported."
+                )
+                error_text_width, error_text_height = cv2.getTextSize(
+                    error_text, font, 1, line_type
+                )[0]
                 error_text_font_scale = int(width * 0.9) / error_text_width
-                error_text_width, error_text_height = cv2.getTextSize(error_text, font, error_text_font_scale, line_type)[0]
-                error_text_coords = (width - error_text_width) // 2, (height + error_text_height) // 2
+                error_text_width, error_text_height = cv2.getTextSize(
+                    error_text, font, error_text_font_scale, line_type
+                )[0]
+                error_text_coords = (width - error_text_width) // 2, (
+                    height + error_text_height
+                ) // 2
 
             elif (
                 isinstance(queue_element, list)
@@ -129,6 +161,13 @@ def continuous_cap(
                     error_text_coords,
                     error_text_font_scale,
                 ) = reset_camera_gui(height)
+
+            elif queue_element == "Exit":
+                cap.release()
+                q.task_done()
+                return
+
+            q.task_done()
 
         face_locations = get_bounding_boxes(frame, scale_size=(height, width))
         if id_face_encoding is not None:
@@ -216,7 +255,17 @@ def continuous_cap(
 
 def reset_camera_gui(
     cam_height: int,
-) -> Tuple[Dict[str, List[Union[str, bool]]], np.ndarray, List[float], int, int, float, str, Tuple[int, int], int]:
+) -> Tuple[
+    Dict[str, List[Union[str, bool]]],
+    np.ndarray,
+    List[float],
+    int,
+    int,
+    float,
+    str,
+    Tuple[int, int],
+    int,
+]:
     status_text: Dict[str, List[Union[str, bool]]] = {
         # "text_download_csca_crl": ["m", False, "Downloading CSCA certificates and CRLs...", "white"],
         # "text_download_csca_crl_status": ["s", False, "", ""],
@@ -261,7 +310,7 @@ def reset_camera_gui(
             reset_camera_gui.status_shown_time,
             "",
             (0, 0),
-            0
+            0,
         )
     else:
         reset_camera_gui.cam_height = cam_height
@@ -292,5 +341,5 @@ def reset_camera_gui(
             reset_camera_gui.status_shown_time,
             "",
             (0, 0),
-            0
+            0,
         )

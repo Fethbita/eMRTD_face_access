@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2021 Burak Can
-# 
+#
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
@@ -8,15 +8,7 @@
 
 from datetime import datetime
 
-from OpenSSL.crypto import (
-    X509,
-    X509Store,
-    X509StoreContext,
-    X509StoreContextError,
-)
-from emrtd_face_access.print_to_sg import SetInterval
-
-print = SetInterval().print
+from OpenSSL.crypto import X509, X509Store, X509StoreContext, X509StoreContextError
 
 
 def is_self_signed(cert: X509) -> bool:

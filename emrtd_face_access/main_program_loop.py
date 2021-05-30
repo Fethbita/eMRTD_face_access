@@ -10,22 +10,18 @@ import os
 
 # import sys
 # import termios
-import threading
-from multiprocessing.pool import ThreadPool
 import argparse
 from typing import Union, TextIO, BinaryIO
 from pathlib import Path
 from queue import Queue
-import time
 
 import PySimpleGUI as sg
-from smartcard.util import toHexString
 from smartcard.Exceptions import CardConnectionException
 from smartcard.CardMonitoring import CardMonitor
 
 from emrtd_face_access.apdu import APDU
-from emrtd_face_access.card_comms import send, wait_for_card, CardCommunicationError, CardWatcher
-from emrtd_face_access.mrz import estonia_read_mrz, other_mrz, parse_mrz_text, check_expiration
+from emrtd_face_access.card_comms import send, CardCommunicationError, CardWatcher
+from emrtd_face_access.mrz import estonia_read_mrz, check_expiration
 from emrtd_face_access.bac import establish_bac_session_keys, SessionKeyEstablishmentError
 from emrtd_face_access.file_operations import (
     EFReadError,
@@ -40,18 +36,16 @@ from emrtd_face_access.passive_authentication import (
     passive_auth,
     PassiveAuthenticationCriticalError,
 )
+from emrtd_face_access.face_compare import opencv_dnn_detector
 from emrtd_face_access.chip_authentication import chip_auth, ChipAuthenticationError
 from emrtd_face_access.active_authentication import active_auth, ActiveAuthenticationError
 from emrtd_face_access.image_operations import get_jpeg_im
 from emrtd_face_access.ee_valid import check_validity, download_certs
-from emrtd_face_access.ocr import capture_mrz
 from emrtd_face_access.secure_messaging_object import SMObject
 from emrtd_face_access.log_operations import create_output_folder
 from emrtd_face_access.icao_pkd_load import build_store
 from emrtd_face_access.byte_operations import nb
-from emrtd_face_access.print_to_sg import SetInterval
 
-print = SetInterval().print
 
 # fmt: off
 atr_exceptions = [
@@ -95,10 +89,7 @@ def main(
         q.put([True, "build_cert_store_status", "OK", "green"])
 
         # create face detector network
-        if args.biometric:
-            from emrtd_face_access.face_compare import opencv_dnn_detector
-
-            opencv_dnn_detector()
+        opencv_dnn_detector()
 
     wait_for_card_event: Queue = Queue()
     cardmonitor = CardMonitor()
@@ -125,45 +116,39 @@ def main(
     q.put([True, "text_card_insert_status", "OK", "green"])
 
     ## DERIVATION OF DOCUMENT BASIC ACCESS KEYS (KENC AND KMAC) ##
-    if True:  # args.ee:
-        try:
-            (
-                mrz_information,
-                document_number,
-                personal_id_code,
-                name,
-                surname,
-            ) = estonia_read_mrz(sm_object)
-        except CardCommunicationError:
-            window.write_event_value("-RAISED EXCEPTION-", "")
-            return
-        except CardConnectionException as ex:
-            print(ex)
-            window.write_event_value("-RAISED EXCEPTION-", "")
-            return
-        else:
-            issuing_country = b"EST"
-            window.write_event_value(
-                "-WRITE NAME-",
-                [True, "text_name_surname", f"NAME: {name} {surname}", "white"],
-            )
-            window.write_event_value(
-                "-WRITE DOC NUM-",
-                [True, "text_doc_num", f"DOCUMENT NUMBER: {document_number}", "white"],
-            )
-            window.write_event_value(
-                "-WRITE ID CODE-",
-                [True, "text_personal_code", f"PERSONAL ID CODE: {personal_id_code}", "white"],
-            )
+    # From Estonian ID card applet
+    try:
+        (
+            mrz_information,
+            document_number,
+            personal_id_code,
+            name,
+            surname,
+        ) = estonia_read_mrz(sm_object)
+    except CardCommunicationError:
+        window.write_event_value("-RAISED EXCEPTION-", "")
+        return
+    except CardConnectionException as ex:
+        print(ex)
+        window.write_event_value("-RAISED EXCEPTION-", "")
+        return
+    else:
+        issuing_country = b"EST"
+        window.write_event_value(
+            "-WRITE NAME-",
+            [True, "text_name_surname", f"NAME: {name} {surname}", "white"],
+        )
+        window.write_event_value(
+            "-WRITE DOC NUM-",
+            [True, "text_doc_num", f"DOCUMENT NUMBER: {document_number}", "white"],
+        )
+        window.write_event_value(
+            "-WRITE ID CODE-",
+            [True, "text_personal_code", f"PERSONAL ID CODE: {personal_id_code}", "white"],
+        )
 
     if output_files:
         folder_name = create_output_folder(output_dir, document_number)
-
-    # if args.mrz and output_files:
-    #     with open(os.path.join(folder_name, "mrz_text.txt"), "wt") as outfile:
-    #         outfile.write("\n".join(mrz))
-
-    #     mrz_image.save(os.path.join(folder_name, "mrz_photo.jpeg"))
 
     # Select eMRTD application
     print("[+] Selecting eMRTD Application ‘International AID’: A0000002471001...")

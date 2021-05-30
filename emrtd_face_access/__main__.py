@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2021 Burak Can
-# 
+#
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
@@ -16,11 +16,16 @@ import PySimpleGUI as sg
 
 from emrtd_face_access.main_program_loop import main
 from emrtd_face_access.gui import setup_gui
-from emrtd_face_access.print_to_sg import SetInterval
 from emrtd_face_access.camera import continuous_cap
+
 
 def parse_arguments() -> argparse.Namespace:
     """parse arguments"""
+
+    def raise_(ex):
+        """https://stackoverflow.com/a/8294654/6077951"""
+        raise ex
+
     parser = argparse.ArgumentParser(
         description="Biometric (Facial) Access Control System Using ID Card"
     )
@@ -30,26 +35,6 @@ def parse_arguments() -> argparse.Namespace:
         action="store_true",
         help="Download crl and csca certificates online.",
     )
-
-    group = parser.add_mutually_exclusive_group(required=False)
-    group.add_argument(
-        "-bio",
-        dest="biometric",
-        action="store_true",
-        help="(default) Use biometric control (facial recognition)",
-    )
-    group.add_argument(
-        "-no-bio",
-        dest="biometric",
-        action="store_false",
-        help="Do not use biometric control (facial recognition)",
-    )
-    parser.set_defaults(biometric=True)
-
-    def raise_(ex):
-        """https://stackoverflow.com/a/8294654/6077951"""
-        raise ex
-
     parser.add_argument(
         "--certs",
         type=lambda x: Path(x) if os.path.isdir(x) else raise_(NotADirectoryError(x)),
@@ -66,6 +51,26 @@ def parse_arguments() -> argparse.Namespace:
         type=lambda x: Path(x) if os.path.isdir(x) else raise_(NotADirectoryError(x)),
         help="Directory to save read card files",
     )
+    parser.add_argument(
+        "--camera",
+        "--c",
+        default=-1,
+        type=int,
+        help="Device id of the camera to be used",
+    )
+    parser.add_argument(
+        "--resolution",
+        "--r",
+        nargs=2,
+        type=int,
+        help="Resolution to be run at, if not given the screen resolution is used (width height)",
+    )
+    parser.add_argument(
+        "--rotate",
+        type=lambda x: int(x) if int(x) in (90, 180, 270) else raise_(ValueError(x)),
+        default=0,
+        help="Degrees to rotate clockwise (90, 180, 270)",
+    )
 
     args = parser.parse_args()
 
@@ -78,6 +83,8 @@ def main_event_loop():
     """
     args = parse_arguments()
     w, h = sg.Window.get_screen_size()
+    if args.resolution is not None:
+        w, h = args.resolution
     layout = setup_gui(w, h)
     window = sg.Window(
         "eMRTD Face Access",
@@ -85,31 +92,27 @@ def main_event_loop():
         return_keyboard_events=True,
         use_default_focus=False,
         finalize=True,
-        #no_titlebar=True,
-        #keep_on_top=True,
+        # no_titlebar=True,
+        # keep_on_top=True,
         resizable=False,
         element_justification="center",
-
     )
     window.maximize()
-    SetInterval().initialize(window, 0.1)
-    SetInterval().start()
 
     first_run = True
     run = True
     q: Queue = Queue()
     threading.Thread(
-        target=continuous_cap, args=(window, -1, w, h, q), daemon=True
+        target=continuous_cap, args=(window, args.camera, w, h, args.rotate, q), daemon=True
     ).start()
     while True:
         if run:
-            threading.Thread(
-                target=main, args=(window, args, q, first_run), daemon=True
-            ).start()
+            threading.Thread(target=main, args=(window, args, q, first_run), daemon=True).start()
             first_run = False
             run = False
         event, values = window.read()
         if event in (sg.WIN_CLOSED, "Exit"):
+            q.put("Exit")
             break
         elif event == "-RUN COMPLETE-":
             run = True
@@ -122,7 +125,9 @@ def main_event_loop():
         elif event == "-PROGRESS BAR-":
             window["progress"].update_bar(values[event][0], values[event][1])
 
-    SetInterval().cancel()
+    while q.qsize() != 0:
+        event, values = window.read(timeout=20)
+    q.join()
     window.close()
 
 

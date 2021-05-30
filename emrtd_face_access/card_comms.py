@@ -6,9 +6,6 @@
 
 """Functions related to card communication; APDU send etc."""
 
-from smartcard.CardRequest import CardRequest
-from smartcard.CardConnection import CardConnection
-from smartcard.CardConnectionDecorator import CardConnectionDecorator
 from smartcard.Exceptions import CardConnectionException
 from smartcard.CardMonitoring import CardObserver
 from smartcard.Exceptions import NoCardException
@@ -18,9 +15,6 @@ from emrtd_face_access.apdu import APDU
 from emrtd_face_access.secure_messaging import secure_messaging, process_rapdu, ReplyAPDUError
 from emrtd_face_access.secure_messaging_object import SMObject
 from emrtd_face_access.byte_operations import nb
-from emrtd_face_access.print_to_sg import SetInterval
-
-print = SetInterval().print
 
 
 class CardWatcher(CardObserver):
@@ -32,7 +26,16 @@ class CardWatcher(CardObserver):
         self.validcards = [
             [0x3B, 0xDB, 0x96, 0x00, 0x80, 0xB1, 0xFE, 0x45, 0x1F, 0x83, 0x00, 0x12, 0x23, 0x3F, 0x53, 0x65, 0x49, 0x44, 0x0F, 0x90, 0x00, 0xF1],
         ]
+        # https://dspace.ut.ee/handle/10062/71481
         self.knowncards = [
+            # Micardo before upgrade cold
+            [0x3B, 0xFE, 0x94, 0x00, 0xFF, 0x80, 0xB1, 0xFA, 0x45, 0x1F, 0x03, 0x45, 0x73, 0x74, 0x45, 0x49, 0x44, 0x20, 0x76, 0x65, 0x72, 0x20, 0x31, 0x2E, 0x30, 0x43],
+            # Micardo before upgrade warm
+            [0x3B, 0x6E, 0x00, 0xFF, 0x45, 0x73, 0x74, 0x45, 0x49, 0x44, 0x20, 0x76, 0x65, 0x72, 0x20, 0x31, 0x2E, 0x30],
+            # Micardo after upgrade cold
+            [0x3B, 0xDE, 0x18, 0xFF, 0xC0, 0x80, 0xB1, 0xFE, 0x45, 0x1F, 0x03, 0x45, 0x73, 0x74, 0x45, 0x49, 0x44, 0x20, 0x76, 0x65, 0x72, 0x20, 0x31, 0x2E, 0x30, 0x2B],
+            # Micardo after upgrade warm
+            [0x3B, 0x5E, 0x11, 0xFF, 0x45, 0x73, 0x74, 0x45, 0x49, 0x44, 0x20, 0x76, 0x65, 0x72, 0x20, 0x31, 0x2E, 0x30],
             # jTOP SLE66-powered ID cards (EstEID 3.0 contactless)
             [0x3B, 0x89, 0x80, 0x01, 0x4D, 0x54, 0x43, 0x4F, 0x53, 0x70, 0x02, 0x01, 0x05, 0x38],
             # jTOP SLE66-powered ID cards (EstEID 3.0 "JavaCard" cold)
@@ -59,7 +62,7 @@ class CardWatcher(CardObserver):
                 except (NoCardException, CardConnectionException) as e:
                     continue
                 self.queue2.put(["Valid card", card.connection, card.atr])
-            else:
+            elif card.atr in self.knowncards:
                 try:
                     card.connection = card.createConnection()
                     card.connection.connect()
@@ -68,11 +71,15 @@ class CardWatcher(CardObserver):
                     if [sw1, sw2] != [0x90, 0x00]:
                         continue
                     # Select the catalogue EEEE
-                    _, sw1, sw2 = card.connection.transmit([0x00, 0xA4, 0x01, 0x0C, 0x02, 0xEE, 0xEE])
+                    _, sw1, sw2 = card.connection.transmit(
+                        [0x00, 0xA4, 0x01, 0x0C, 0x02, 0xEE, 0xEE]
+                    )
                     if [sw1, sw2] != [0x90, 0x00]:
                         continue
                     # Select the file 5044
-                    _, sw1, sw2 = card.connection.transmit([0x00, 0xA4, 0x02, 0x0C, 0x02, 0x50, 0x44])
+                    _, sw1, sw2 = card.connection.transmit(
+                        [0x00, 0xA4, 0x02, 0x0C, 0x02, 0x50, 0x44]
+                    )
                     if [sw1, sw2] != [0x90, 0x00]:
                         continue
                     # Read issue date
@@ -92,27 +99,13 @@ class CardWatcher(CardObserver):
                     self.queue2.put(["Known card", doc_type_text, issue])
                 except (NoCardException, CardConnectionException) as e:
                     continue
+            else:
+                self.queue2.put(["Unknown card"])
+
         for card in removedcards:
             print("[-] Removed card ATR: " + toHexString(card.atr))
             self.queue.put("Disconnect")
             self.queue2.put("Disconnect")
-
-
-def wait_for_card() -> CardConnectionDecorator:
-    """
-    Wait for card connection and return channel to the card.
-    """
-    channel = CardRequest(timeout=None).waitforcard().connection
-    # uncomment for traching APDUs
-    # observer = DisconnectWatcher()
-    # channel.addObserver(observer)
-    print("[+] Selected reader:", channel.getReader())
-    try:
-        channel.connect(CardConnection.T1_protocol)
-    except:
-        print("[!] Fallback to T=0")
-        channel.connect(CardConnection.T0_protocol)
-    return channel
 
 
 class CardCommunicationError(Exception):

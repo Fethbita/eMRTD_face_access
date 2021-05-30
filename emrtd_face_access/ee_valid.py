@@ -12,10 +12,6 @@ from urllib import request
 import subprocess
 from queue import Queue
 
-from emrtd_face_access.print_to_sg import SetInterval
-
-print = SetInterval().print
-
 
 def check_validity(q: Queue, doc_num: str) -> None:
     """

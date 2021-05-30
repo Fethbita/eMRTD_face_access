@@ -16,6 +16,6 @@ def setup_gui(width: int, height: int) -> List[List[Union[sg.Text, sg.Image, sg.
     sg.theme("DarkBlack")
 
     camera_image = sg.Image(size=(width, height), key="camera_image")
-    layout = [[camera_image], [sg.Button("Exit", size=(10, 1), font="Helvetica 14")]]
+    layout = [[sg.Button("Exit", size=(10, 1), font="Helvetica 14")], [camera_image]]
 
     return layout

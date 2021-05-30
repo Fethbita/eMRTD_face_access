@@ -6,20 +6,12 @@
 
 """This module does comparison of two images"""
 
-import argparse
-import os
 from io import BytesIO
 from typing import List, Tuple
-from pathlib import Path
 
 import numpy as np
 from PIL import Image
 from cv2 import cv2
-import face_recognition
-
-from emrtd_face_access.print_to_sg import SetInterval
-
-print = SetInterval().print
 
 
 def opencv_dnn_detector() -> cv2.dnn_Net:
@@ -80,49 +72,3 @@ def bytes_to_np(img: bytes) -> np.ndarray:
     im = Image.open(BytesIO(img))
     im = im.convert("RGB")
     return np.array(im)
-
-
-def main(im1_filename: Path, im2_filename: Path) -> None:
-    """
-    Compare two persons images.
-    """
-    im1 = np.array(Image.open(im1_filename).convert("RGB"))
-    im2 = np.array(Image.open(im2_filename).convert("RGB"))
-
-    im1 = im1[:, :, ::-1]
-    id_face_loc = get_bounding_boxes(im1)
-    im1 = im1[:, :, ::-1]
-    face_encodings = face_recognition.face_encodings(im1, id_face_loc, 10, "large")[0]
-
-    im2 = im2[:, :, ::-1]
-    cam_face_loc = get_bounding_boxes(im2)
-    im2 = im2[:, :, ::-1]
-    face_encodings2 = face_recognition.face_encodings(im2, cam_face_loc, 10, "large")[0]
-
-    dist = face_recognition.face_distance([face_encodings], face_encodings2)[0]
-    if dist < 0.5:
-        print(f"[+] These images belong to the same person! ({dist})")
-    else:
-        print(f"[-] These images do not belong to the same person! ({dist})")
-
-
-if __name__ == "__main__":
-
-    def raise_(ex):
-        """https://stackoverflow.com/a/8294654/6077951"""
-        raise ex
-
-    parser = argparse.ArgumentParser(description="Find if two images are of the same people.")
-    parser.add_argument(
-        "image_one",
-        type=lambda x: x if os.path.isfile(x) else raise_(FileNotFoundError(x)),
-        help="Path to image one",
-    )
-    parser.add_argument(
-        "image_two",
-        type=lambda x: x if os.path.isfile(x) else raise_(FileNotFoundError(x)),
-        help="Path to image two",
-    )
-    args = parser.parse_args()
-
-    main(Path(args.image_one), Path(args.image_two))

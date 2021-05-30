@@ -20,11 +20,3 @@ if ! echo "$checksum face_detection/deploy.prototxt" | sha256sum -c -; then
     echo "Checksum failed for face_detection/deploy.prototxt" >&2
     rm -rf face_detection/deploy.prototxt
 fi
-
-checksum=202360e0ddf5ada547b21c1da2a4f09ac6fc9cb035e8d1e2480ecdda79bc4554
-wget -q -P text_detection https://github.com/DoubangoTelecom/ultimateMRZ-SDK/raw/master/assets/models/mrz.traineddata
-sha256sum=($(sha256sum text_detection/mrz.traineddata))
-if ! echo "$checksum text_detection/mrz.traineddata" | sha256sum -c -; then
-    echo "Checksum failed for text_detection/mrz.traineddata" >&2
-    rm -rf text_detection/mrz.traineddata
-fi
