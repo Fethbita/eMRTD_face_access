@@ -217,6 +217,13 @@ def continuous_cap(
         if time.time() - status_shown_time <= 10 or status_shown_time == 0:
             i = 0
             frame_overlay = copy.deepcopy(frame_shown)
+            cv2.rectangle(
+                frame_overlay,
+                (start_x_1, int(start_y - text_height)),
+                (width, int(start_y + text_height * (len(status_text) / 2 - 1) * 1.5)),
+                (255, 255, 255),
+                cv2.FILLED,
+            )
             for _, value in status_text.items():
                 if value[1]:
                     if value[0] == "m":
@@ -238,6 +245,13 @@ def continuous_cap(
 
         if error_text != "":
             frame_overlay = copy.deepcopy(frame_shown)
+            cv2.rectangle(
+                frame_overlay,
+                error_text_coords,
+                (error_text_coords[0] + error_text_width, error_text_coords[1] - error_text_height),
+                (0, 0, 0),
+                cv2.FILLED,
+            )
             cv2.putText(
                 frame_overlay,
                 error_text,

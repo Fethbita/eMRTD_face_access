@@ -15,7 +15,6 @@ from queue import Queue
 import PySimpleGUI as sg
 
 from emrtd_face_access.main_program_loop import main
-from emrtd_face_access.gui import setup_gui
 from emrtd_face_access.camera import continuous_cap
 
 
@@ -82,10 +81,12 @@ def main_event_loop():
     Main GUI event loop
     """
     args = parse_arguments()
+    sg.theme("DarkBlack")
     w, h = sg.Window.get_screen_size()
     if args.resolution is not None:
         w, h = args.resolution
-    layout = setup_gui(w, h)
+    layout = [[sg.Image(size=(w, h), key="camera_image")]]
+
     window = sg.Window(
         "eMRTD Face Access",
         layout,
@@ -98,6 +99,7 @@ def main_event_loop():
         element_justification="center",
     )
     window.maximize()
+    window.set_cursor('none')
 
     first_run = True
     run = True
@@ -127,6 +129,7 @@ def main_event_loop():
 
     while q.qsize() != 0:
         event, values = window.read(timeout=20)
+        
     q.join()
     window.close()
 
