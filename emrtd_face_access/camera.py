@@ -46,9 +46,6 @@ def continuous_cap(
     ratio = min(screen_width / frame.shape[1], screen_height / frame.shape[0])
     width = int(frame.shape[1] * ratio)
     height = int(frame.shape[0] * ratio)
-    # ratio = 0.2
-    # width = screen_width
-    # height = 500
 
     colors: Dict[str, Tuple[int, int, int]] = {
         "white": (0, 0, 0),
@@ -110,6 +107,19 @@ def continuous_cap(
 
                 status_shown_time = time.time()
 
+            elif isinstance(queue_element, list) and queue_element[0] == "Insert card" and error_text == "":
+                error_text = "Please insert identity document."
+                error_text_width, error_text_height = cv2.getTextSize(
+                    error_text, font, 1, line_type
+                )[0]
+                error_text_font_scale = int(width * 0.9) / error_text_width
+                error_text_width, error_text_height = cv2.getTextSize(
+                    error_text, font, error_text_font_scale, line_type
+                )[0]
+                error_text_coords = (width - error_text_width) // 2, (
+                    height + error_text_height
+                ) // 2
+
             elif isinstance(queue_element, list) and queue_element[0] == "Unknown card":
                 error_text = "Unrecognized card inserted."
                 error_text_width, error_text_height = cv2.getTextSize(
@@ -137,6 +147,11 @@ def continuous_cap(
                 error_text_coords = (width - error_text_width) // 2, (
                     height + error_text_height
                 ) // 2
+
+            elif isinstance(queue_element, list) and queue_element[0] == "Valid card":
+                error_text = ""
+                error_text_coords = (0, 0)
+                error_text_font_scale = 0
 
             elif (
                 isinstance(queue_element, list)
@@ -255,8 +270,8 @@ def continuous_cap(
             frame_overlay = copy.deepcopy(frame_shown)
             cv2.rectangle(
                 frame_overlay,
-                error_text_coords,
-                (error_text_coords[0] + error_text_width, error_text_coords[1] - error_text_height),
+                (error_text_coords[0] - 10, error_text_coords[1] + 10),
+                (error_text_coords[0] + error_text_width + 10, error_text_coords[1] - error_text_height - 10),
                 (0, 0, 0),
                 cv2.FILLED,
             )
@@ -371,28 +386,26 @@ def reset_camera_gui(
 def supported_card_images(
     screen_width: int, screen_height: int, width: int, height: int
 ) -> Tuple[np.ndarray, int]:
-    trp_2018 = cv2.imread("docs/demo_rp_2018_12_03.jpg")
     trp_2020 = cv2.imread("docs/demo_rp_2020_10_01.jpg")
     id_2021 = cv2.imread("docs/demo_id_2021_07.jpg")
     border_color = [255, 255, 255]
     if width != screen_width:
         cards_width = screen_width - width
 
-        card_ratio = cards_width / trp_2018.shape[1]
-        cards_height = int(trp_2018.shape[0] * card_ratio)
+        card_ratio = cards_width / trp_2020.shape[1]
+        cards_height = int(trp_2020.shape[0] * card_ratio)
 
-        if cards_height * 3 >= screen_height:
+        if cards_height * 2 >= screen_height:
             border_height = 50
             last_border_height = 50
-            cards_height = int(height // 3) - border_height
-            card_ratio = cards_height / trp_2018.shape[0]
-            cards_width = int(trp_2018.shape[1] * card_ratio)
+            cards_height = int(height // 2) - border_height
+            card_ratio = cards_height / trp_2020.shape[0]
+            cards_width = int(trp_2020.shape[1] * card_ratio)
         else:
-            border_height = int((screen_height - cards_height * 3) / 3)
-            last_border_height = height - (cards_height * 3 + 3 * border_height)
+            border_height = int((screen_height - cards_height * 2) / 2)
+            last_border_height = height - (cards_height * 2 + 2 * border_height)
             last_border_height += border_height
 
-        trp_2018 = cv2.resize(trp_2018, (cards_width, cards_height))
         trp_2020 = cv2.resize(trp_2020, (cards_width, cards_height))
         id_2021 = cv2.resize(id_2021, (cards_width, cards_height))
 
@@ -402,49 +415,20 @@ def supported_card_images(
         border_height = 50
         last_border_height = border_height
         cards_height = screen_height - height - border_height
-        card_ratio = (cards_height) / trp_2018.shape[0]
-        cards_width = int(trp_2018.shape[1] * card_ratio)
+        card_ratio = (cards_height) / trp_2020.shape[0]
+        cards_width = int(trp_2020.shape[1] * card_ratio)
 
-        if cards_width * 3 >= screen_width:
-            cards_width = int(width // 3)
-            card_ratio = cards_width / trp_2018.shape[1]
-            cards_height = int(trp_2018.shape[0] * card_ratio)
+        if cards_width * 2 >= screen_width:
+            cards_width = int(width // 2)
+            card_ratio = cards_width / trp_2020.shape[1]
+            cards_height = int(trp_2020.shape[0] * card_ratio)
             border_height = screen_height - height - cards_height
             last_border_height = border_height
 
-        trp_2018 = cv2.resize(trp_2018, (cards_width, cards_height))
         trp_2020 = cv2.resize(trp_2020, (cards_width, cards_height))
         id_2021 = cv2.resize(id_2021, (cards_width, cards_height))
-
+        buffer = np.full((cards_height + border_height, screen_width - cards_width * 2, 3), border_color, np.uint8)
         append_axis = 0
-
-    trp_2018 = cv2.copyMakeBorder(
-        trp_2018,
-        0,
-        border_height,
-        0,
-        0,
-        cv2.BORDER_CONSTANT,
-        value=border_color,
-    )
-
-    text = f"Residence permit cards issued since December 2018 are supported"
-    text_width, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
-    text_font_scale = int(cards_width * 0.9) / text_width
-    text_width, text_height = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, text_font_scale, 2)[0]
-    text_coords = (cards_width - text_width) // 2, cards_height + (
-        (border_height + text_height) // 2
-    )
-
-    cv2.putText(
-        trp_2018,
-        text,
-        text_coords,
-        cv2.FONT_HERSHEY_SIMPLEX,
-        text_font_scale,
-        (0, 0, 0),
-        2,
-    )
 
     trp_2020 = cv2.copyMakeBorder(
         trp_2020,
@@ -456,7 +440,7 @@ def supported_card_images(
         value=border_color,
     )
 
-    text = f"Residence permit cards issued since October 2020 are supported"
+    text = "Residence permit cards issued since December 2018 are supported"
     text_width, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
     text_font_scale = int(cards_width * 0.9) / text_width
     text_width, text_height = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, text_font_scale, 2)[0]
@@ -483,7 +467,7 @@ def supported_card_images(
         cv2.BORDER_CONSTANT,
         value=border_color,
     )
-    text = f"ID cards issued since July 2021 are supported"
+    text = "ID cards issued since July 2021 are supported"
     text_width, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
     text_font_scale = int(cards_width * 0.9) / text_width
     text_width, text_height = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, text_font_scale, 2)[0]
@@ -502,8 +486,8 @@ def supported_card_images(
     )
 
     if width != screen_width:
-        demos = np.concatenate((trp_2018, trp_2020, id_2021), axis=0)
+        demos = np.concatenate((trp_2020, id_2021), axis=0)
     elif height != screen_height:
-        demos = np.concatenate((trp_2018, trp_2020, id_2021), axis=1)
+        demos = np.concatenate((trp_2020, buffer, id_2021), axis=1)
 
     return demos, append_axis

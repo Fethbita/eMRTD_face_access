@@ -103,10 +103,12 @@ def main(
     while True:
         print("[?] Please place your document onto the card reader.")
         q.put([True, "text_card_insert"])
+        q.put(["Insert card"])
         connection = wait_for_card_event.get()
         if connection[0] == "Valid card":
             sm_object = SMObject(connection[1])
             atr = connection[2]
+            q.put(connection)
             break
         elif connection[0] == "Known card":
             q.put(connection)
