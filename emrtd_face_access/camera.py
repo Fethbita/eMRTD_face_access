@@ -31,6 +31,7 @@ def continuous_cap(
     Continuously capture
     """
     cap = cv2.VideoCapture(camera_id)
+    # Disable autofocus
     cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)
     font = cv2.FONT_HERSHEY_SIMPLEX
     line_type = 2
@@ -45,12 +46,18 @@ def continuous_cap(
     ratio = min(screen_width / frame.shape[1], screen_height / frame.shape[0])
     width = int(frame.shape[1] * ratio)
     height = int(frame.shape[0] * ratio)
+    # ratio = 0.2
+    # width = screen_width
+    # height = 500
+
     colors: Dict[str, Tuple[int, int, int]] = {
         "white": (0, 0, 0),
         "green": (0, 255, 0),
         "red": (0, 0, 255),
         "yellow": (0, 255, 255),
     }
+
+    demos, append_axis = supported_card_images(screen_width, screen_height, width, height)
 
     (
         status_text,
@@ -104,7 +111,7 @@ def continuous_cap(
                 status_shown_time = time.time()
 
             elif isinstance(queue_element, list) and queue_element[0] == "Unknown card":
-                error_text = f"Unrecognized card inserted."
+                error_text = "Unrecognized card inserted."
                 error_text_width, error_text_height = cv2.getTextSize(
                     error_text, font, 1, line_type
                 )[0]
@@ -169,24 +176,24 @@ def continuous_cap(
 
             q.task_done()
 
-        face_locations = get_bounding_boxes(frame, scale_size=(height, width))
+        face_locations, face_locations_ns = get_bounding_boxes(
+            frame, scale_size=(height, width), non_scaled=True
+        )
+        assert isinstance(face_locations, list)
+        assert isinstance(face_locations_ns, list)
         if id_face_encoding is not None:
             cv2.addWeighted(
                 id_image,
                 0.5,
-                frame_shown[frame_shown.shape[0] - id_im_height :, :id_im_width, :],
+                frame_shown[height - id_im_height : height, :id_im_width, :],
                 1 - 0.5,
                 0,
-                frame_shown[frame_shown.shape[0] - id_im_height :, :id_im_width, :],
+                frame_shown[height - id_im_height : height, :id_im_width, :],
             )
 
-            face_locations2: List[Tuple[int, ...]] = []
-            for face in face_locations:
-                top, right, bottom, left = face
-                face_locations2.append(tuple([int(x / ratio) for x in face]))
-
-            im2 = frame[:, :, ::-1]
-            face_encodings = face_recognition.face_encodings(im2, face_locations2, 1, "large")
+            face_encodings = face_recognition.face_encodings(
+                frame[:, :, ::-1], face_locations_ns, 1, "large"
+            )
             distances = face_recognition.face_distance(face_encodings, id_face_encoding)
             for i in range(len(face_locations)):
                 top, right, bottom, left = face_locations[i]
@@ -242,6 +249,7 @@ def continuous_cap(
                 if value[0] == "s":
                     i += 1
             cv2.addWeighted(frame_shown, 1 - text_alpha, frame_overlay, text_alpha, 0, frame_shown)
+            frame_shown = np.concatenate((frame_shown, demos), axis=append_axis)
 
         if error_text != "":
             frame_overlay = copy.deepcopy(frame_shown)
@@ -330,6 +338,7 @@ def reset_camera_gui(
         reset_camera_gui.cam_height = cam_height
 
         id_image = cv2.imread("face_detection/jaak-kristjan.jpg")
+        # crop only the facial image
         id_image = id_image[15:1087, 15:1079, ::]
 
         id_face_loc = get_bounding_boxes(id_image)
@@ -357,3 +366,144 @@ def reset_camera_gui(
             (0, 0),
             0,
         )
+
+
+def supported_card_images(
+    screen_width: int, screen_height: int, width: int, height: int
+) -> Tuple[np.ndarray, int]:
+    trp_2018 = cv2.imread("docs/demo_rp_2018_12_03.jpg")
+    trp_2020 = cv2.imread("docs/demo_rp_2020_10_01.jpg")
+    id_2021 = cv2.imread("docs/demo_id_2021_07.jpg")
+    border_color = [255, 255, 255]
+    if width != screen_width:
+        cards_width = screen_width - width
+
+        card_ratio = cards_width / trp_2018.shape[1]
+        cards_height = int(trp_2018.shape[0] * card_ratio)
+
+        if cards_height * 3 >= screen_height:
+            border_height = 50
+            last_border_height = 50
+            cards_height = int(height // 3) - border_height
+            card_ratio = cards_height / trp_2018.shape[0]
+            cards_width = int(trp_2018.shape[1] * card_ratio)
+        else:
+            border_height = int((screen_height - cards_height * 3) / 3)
+            last_border_height = height - (cards_height * 3 + 3 * border_height)
+            last_border_height += border_height
+
+        trp_2018 = cv2.resize(trp_2018, (cards_width, cards_height))
+        trp_2020 = cv2.resize(trp_2020, (cards_width, cards_height))
+        id_2021 = cv2.resize(id_2021, (cards_width, cards_height))
+
+        append_axis = 1
+
+    elif height != screen_height:
+        border_height = 50
+        last_border_height = border_height
+        cards_height = screen_height - height - border_height
+        card_ratio = (cards_height) / trp_2018.shape[0]
+        cards_width = int(trp_2018.shape[1] * card_ratio)
+
+        if cards_width * 3 >= screen_width:
+            cards_width = int(width // 3)
+            card_ratio = cards_width / trp_2018.shape[1]
+            cards_height = int(trp_2018.shape[0] * card_ratio)
+            border_height = screen_height - height - cards_height
+            last_border_height = border_height
+
+        trp_2018 = cv2.resize(trp_2018, (cards_width, cards_height))
+        trp_2020 = cv2.resize(trp_2020, (cards_width, cards_height))
+        id_2021 = cv2.resize(id_2021, (cards_width, cards_height))
+
+        append_axis = 0
+
+    trp_2018 = cv2.copyMakeBorder(
+        trp_2018,
+        0,
+        border_height,
+        0,
+        0,
+        cv2.BORDER_CONSTANT,
+        value=border_color,
+    )
+
+    text = f"Residence permit cards issued since December 2018 are supported"
+    text_width, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
+    text_font_scale = int(cards_width * 0.9) / text_width
+    text_width, text_height = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, text_font_scale, 2)[0]
+    text_coords = (cards_width - text_width) // 2, cards_height + (
+        (border_height + text_height) // 2
+    )
+
+    cv2.putText(
+        trp_2018,
+        text,
+        text_coords,
+        cv2.FONT_HERSHEY_SIMPLEX,
+        text_font_scale,
+        (0, 0, 0),
+        2,
+    )
+
+    trp_2020 = cv2.copyMakeBorder(
+        trp_2020,
+        0,
+        border_height,
+        0,
+        0,
+        cv2.BORDER_CONSTANT,
+        value=border_color,
+    )
+
+    text = f"Residence permit cards issued since October 2020 are supported"
+    text_width, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
+    text_font_scale = int(cards_width * 0.9) / text_width
+    text_width, text_height = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, text_font_scale, 2)[0]
+    text_coords = (cards_width - text_width) // 2, cards_height + (
+        (border_height + text_height) // 2
+    )
+
+    cv2.putText(
+        trp_2020,
+        text,
+        text_coords,
+        cv2.FONT_HERSHEY_SIMPLEX,
+        text_font_scale,
+        (0, 0, 0),
+        2,
+    )
+
+    id_2021 = cv2.copyMakeBorder(
+        id_2021,
+        0,
+        last_border_height,
+        0,
+        0,
+        cv2.BORDER_CONSTANT,
+        value=border_color,
+    )
+    text = f"ID cards issued since July 2021 are supported"
+    text_width, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
+    text_font_scale = int(cards_width * 0.9) / text_width
+    text_width, text_height = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, text_font_scale, 2)[0]
+    text_coords = (cards_width - text_width) // 2, cards_height + (
+        (last_border_height + text_height) // 2
+    )
+
+    cv2.putText(
+        id_2021,
+        text,
+        text_coords,
+        cv2.FONT_HERSHEY_SIMPLEX,
+        text_font_scale,
+        (0, 0, 0),
+        2,
+    )
+
+    if width != screen_width:
+        demos = np.concatenate((trp_2018, trp_2020, id_2021), axis=0)
+    elif height != screen_height:
+        demos = np.concatenate((trp_2018, trp_2020, id_2021), axis=1)
+
+    return demos, append_axis

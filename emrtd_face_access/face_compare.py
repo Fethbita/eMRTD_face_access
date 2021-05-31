@@ -7,7 +7,7 @@
 """This module does comparison of two images"""
 
 from io import BytesIO
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 from PIL import Image
@@ -31,8 +31,11 @@ def opencv_dnn_detector() -> cv2.dnn_Net:
 
 
 def get_bounding_boxes(
-    image: np.ndarray, conf_threshold: float = 0.5, scale_size: Tuple[int, int] = (-1, -1)
-) -> List[Tuple[int, ...]]:
+    image: np.ndarray,
+    conf_threshold: float = 0.5,
+    scale_size: Tuple[int, int] = (-1, -1),
+    non_scaled: bool = False,
+) -> Union[List[Tuple[int, ...]], Tuple[List[Tuple[int, ...]], List[Tuple[int, ...]]]]:
     """Image is expected in opencv format (BGR)
     takes image and returns face bounding boxes
     scale_size: Tuple[int, int] (height, width)"""
@@ -40,6 +43,9 @@ def get_bounding_boxes(
     net = opencv_dnn_detector()
 
     face_locations: List[Tuple[int, ...]] = []
+
+    if non_scaled:
+        face_locations2: List[Tuple[int, ...]] = []
 
     blob = cv2.dnn.blobFromImage(image, 1.0, (300, 300), [104, 117, 123], False, False)
     net.setInput(blob)
@@ -51,6 +57,12 @@ def get_bounding_boxes(
             y1 = detections[0, 0, i, 4]
             x2 = detections[0, 0, i, 5]
             y2 = detections[0, 0, i, 6]
+            if non_scaled:
+                x1_ns = int(x1 * image.shape[1])
+                y1_ns = int(y1 * image.shape[0])
+                x2_ns = int(x2 * image.shape[1])
+                y2_ns = int(y2 * image.shape[0])
+                face_locations2.append((y1_ns, x2_ns, y2_ns, x1_ns))
             if scale_size == (-1, -1):
                 x1 = int(x1 * image.shape[1])
                 y1 = int(y1 * image.shape[0])
@@ -62,6 +74,8 @@ def get_bounding_boxes(
                 x2 = int(x2 * scale_size[1])
                 y2 = int(y2 * scale_size[0])
             face_locations.append((y1, x2, y2, x1))
+    if non_scaled:
+        return face_locations, face_locations2
     return face_locations
 
 

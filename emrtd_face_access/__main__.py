@@ -97,9 +97,10 @@ def main_event_loop():
         # keep_on_top=True,
         resizable=False,
         element_justification="center",
+        margins=(0, 0),
     )
     window.maximize()
-    window.set_cursor('none')
+    window.set_cursor("none")
 
     first_run = True
     run = True
@@ -129,8 +130,9 @@ def main_event_loop():
 
     while q.qsize() != 0:
         event, values = window.read(timeout=20)
-        
-    q.join()
+        # pass
+
+    # q.join()
     window.close()
 
 
