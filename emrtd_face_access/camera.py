@@ -74,9 +74,9 @@ def continuous_cap(
         if text_width > max_text_width:
             max_text_width = text_width
 
-    font_scale = int(width * 0.2) / max_text_width
-    start_x_1 = width - int(width * 0.30)
-    start_x_2 = width - int(width * 0.05)
+    font_scale = int(width * 0.40) / max_text_width
+    start_x_1 = width - int(width * 0.50)
+    start_x_2 = width - int(width * 0.10)
     start_y = int(height * 0.05)
 
     while True:
@@ -108,7 +108,7 @@ def continuous_cap(
                 status_shown_time = time.time()
 
             elif isinstance(queue_element, list) and queue_element[0] == "Insert card" and error_text == "":
-                error_text = "Please insert identity document."
+                error_text = "Waiting for an ID card..."
                 error_text_width, error_text_height = cv2.getTextSize(
                     error_text, font, 1, line_type
                 )[0]
@@ -135,7 +135,7 @@ def continuous_cap(
 
             elif isinstance(queue_element, list) and queue_element[0] == "Known card":
                 error_text = (
-                    f"Your {queue_element[1]} is issued on {queue_element[2]} and is not supported."
+                    f"Your {queue_element[1]} is issued on {queue_element[2]}. (not supported)"
                 )
                 error_text_width, error_text_height = cv2.getTextSize(
                     error_text, font, 1, line_type
