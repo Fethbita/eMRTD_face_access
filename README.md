@@ -42,7 +42,7 @@ sudo apt-get install git wget build-essential cmake python3-dev python3-venv pyt
 ### On Arch Linux/Manjaro:
 Download the necessary packages and enable the smart card service:
 ```shell
-ssudo pacman -S git wget base-devel cmake python tk openblas cblas lapack swig ccid opensc 
+sudo pacman -S git wget base-devel cmake python tk openblas cblas lapack swig ccid opensc 
 
 sudo systemctl enable --now pcscd.service
 ```
