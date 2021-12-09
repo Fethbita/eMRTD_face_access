@@ -21,11 +21,6 @@ The proposed solution can be used on the entrances to buildings or self-checkout
 # Motivation
 This is a Master Thesis project, this technology will be aimed at automated border control, but it could also be used for automated or semi-automated access control.
 
-## In action
-
-![a demo of the program](docs/images/demo.gif)
-<sub>The image shown on the phone is taken from [https://thispersondoesnotexist.com/](https://thispersondoesnotexist.com/)</sub>
-
 ## Requirements
 * Linux computer with python3.6 and above
 * Contactless smart card reader
@@ -49,7 +44,7 @@ sudo systemctl enable --now pcscd.service
 
 ## Installation
 ```shell
-git clone --recurse-submodules https://github.com/Fethbita/eMRTD_face_access.git
+git clone -b delta_building_demo --single-branch --recurse-submodules https://github.com/Fethbita/eMRTD_face_access.git
 cd eMRTD_face_access
 # Create virtualenv named '.venv'
 python3 -m venv .venv
@@ -57,7 +52,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 # Upgrade pip
 pip3 install --upgrade pip
-# This last command is memory intensive because dlib is being built.
+# The following command is memory intensive because dlib is being built.
 # Make sure you have available ram before attempting this command
 pip3 install -r requirements.txt
 # Download text detection and face detection assets
