@@ -18,6 +18,8 @@ The proposed solution can be used on the entrances to buildings or self-checkout
 
 <sup>1</sup>[https://www.icao.int/publications/pages/publication.aspx?docnum=9303](https://www.icao.int/publications/pages/publication.aspx?docnum=9303)
 
+Also check out the [delta_building_demo](https://github.com/Fethbita/eMRTD_face_access/tree/delta_building_demo) branch for a more visual application with some of the features removed.
+
 # Motivation
 This is a Master Thesis project, this technology will be aimed at automated border control, but it could also be used for automated or semi-automated access control.
 
@@ -56,7 +58,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 # Upgrade pip
 pip3 install --upgrade pip
-# This last command is memory intensive because dlib is being built.
+# The following command is memory intensive because dlib is being built.
 # Make sure you have available ram before attempting this command
 pip3 install -r requirements.txt
 # Download text detection and face detection assets
