@@ -28,18 +28,28 @@ This is a Master Thesis project, this technology will be aimed at automated bord
 * Internet connection to manually update CRLs and perform document online validity check (only Estonian Documents)
 
 ## Dependencies
-### On Debian/Ubuntu:
-First, [enable the universe repository](https://help.ubuntu.com/community/Repositories/Ubuntu).
-Then download the necessary packages:
-```shell
-sudo apt-get install git wget build-essential cmake python3-dev python3-venv python3-tk libopenblas-dev liblapack-dev swig pcscd libpcsclite-dev libssl-dev
-```
 ### On Arch Linux/Manjaro:
 Download the necessary packages and enable the smart card service:
 ```shell
 sudo pacman -S git wget base-devel cmake python tk openblas cblas lapack swig ccid opensc 
 
 sudo systemctl enable --now pcscd.service
+```
+### On Debian/Ubuntu:
+First, [enable the universe repository](https://help.ubuntu.com/community/Repositories/Ubuntu).
+Then download the necessary packages:
+```shell
+sudo apt-get install git wget build-essential cmake python3-dev python3-venv python3-tk libopenblas-dev liblapack-dev swig pcscd libpcsclite-dev libssl-dev
+```
+
+**P.S.** If you want dlib to use CUDA, you need to install the following packages:
+### On Arch Linux/Manjaro:
+```shell
+sudo pacman -S cuda cudnn
+```
+### On Debian/Ubuntu:
+```shell
+# TODO
 ```
 
 ## Installation
