@@ -21,7 +21,7 @@ The proposed solution can be used on the entrances to buildings or self-checkout
 Also check out the [delta_building_demo](https://github.com/Fethbita/eMRTD_face_access/tree/delta_building_demo) branch for a more visual application with some of the features removed.
 
 # Motivation
-This is a Master Thesis project, this technology will be aimed at automated border control, but it could also be used for automated or semi-automated access control.
+This is a Master Thesis project, this technology will be aimed at automated border control, but it could also be used for automated or semi-automated access control. The thesis can be read here: https://comserv.cs.ut.ee/ati_thesis/datasheet.php?id=72515&year=2021
 
 ## In action
 
